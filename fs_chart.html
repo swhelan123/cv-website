@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                background: #0d1b2a;
+                font-family: "Segoe UI", system-ui, sans-serif;
+                overflow: hidden;
+            }
+            #scroll {
+                width: 100vw;
+                height: 100vh;
+                overflow: auto;
+                padding-top: 42px;
+            }
+            #scroll::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            #scroll::-webkit-scrollbar-track {
+                background: #0d1b2a;
+            }
+            #scroll::-webkit-scrollbar-thumb {
+                background: #2a4a6e;
+                border-radius: 4px;
+            }
+            #canvas {
+                position: relative;
+            }
+            #svg-layer {
+                position: absolute;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+                z-index: 1;
+            }
+            .nd {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-size: 10px;
+                font-weight: 600;
+                line-height: 1.3;
+                color: #fff;
+                border-radius: 7px;
+                z-index: 2;
+                cursor: default;
+                user-select: none;
+                padding: 3px 6px;
+                transition:
+                    filter 0.15s,
+                    box-shadow 0.15s;
+            }
+            .nd:hover {
+                filter: brightness(1.25);
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+                z-index: 20;
+            }
+            .nd.ms {
+                border-radius: 14px;
+                color: #111;
+                font-weight: 700;
+            }
+            .sec-box {
+                position: absolute;
+                border: 2px dashed rgba(100, 160, 255, 0.45);
+                border-radius: 10px;
+                z-index: 0;
+            }
+            .sec-label {
+                position: absolute;
+                top: -13px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: #f1c40f;
+                font-size: 11px;
+                font-weight: 700;
+                white-space: nowrap;
+                background: #0d1b2a;
+                padding: 1px 9px;
+                border-radius: 3px;
+            }
+            /* Dot grid background */
+            #canvas::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background-image: radial-gradient(rgba(100, 160, 255, 0.12) 1px, transparent 1px);
+                background-size: 22px 22px;
+                pointer-events: none;
+                z-index: 0;
+            }
+            /* Header */
+            #hdr {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 42px;
+                background: rgba(10, 20, 38, 0.97);
+                border-bottom: 1px solid rgba(100, 160, 255, 0.2);
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 0 16px;
+                z-index: 300;
+            }
+            #hdr .ttl {
+                color: #f1c40f;
+                font-weight: 700;
+                font-size: 13px;
+                letter-spacing: 0.3px;
+            }
+            #hdr .sub {
+                color: rgba(180, 210, 255, 0.5);
+                font-size: 10.5px;
+            }
+            /* Legend */
+            #legend {
+                position: fixed;
+                bottom: 14px;
+                right: 14px;
+                background: rgba(10, 20, 38, 0.97);
+                border: 1px solid rgba(100, 160, 255, 0.3);
+                border-radius: 9px;
+                padding: 10px 13px;
+                z-index: 300;
+                min-width: 178px;
+            }
+            #legend h4 {
+                color: #f1c40f;
+                font-size: 11px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                text-align: center;
+            }
+            .lr {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: rgba(200, 220, 255, 0.8);
+                font-size: 10px;
+                margin: 3.5px 0;
+            }
+            .lc {
+                width: 38px;
+                height: 14px;
+                border-radius: 3px;
+                flex-shrink: 0;
+            }
+            .lc.ms {
+                border-radius: 7px;
+            }
+            .lc.gate {
+                background: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="hdr">
+            <span class="ttl">🏎 PT Manufacturing Plan — E135</span>
+            <span class="sub">Scroll to explore · Progress flows upward within sections · Hover nodes for highlight</span>
+        </div>
+
+        <div id="legend">
+            <h4>Legend</h4>
+            <div class="lr">
+                <div class="lc" style="background: #2d5fa6"></div>
+                Manufacturing Task
+            </div>
+            <div class="lr">
+                <div class="lc" style="background: #6b4fa0"></div>
+                Assembly Task
+            </div>
+            <div class="lr">
+                <div class="lc" style="background: #27ae60"></div>
+                Completed
+            </div>
+            <div class="lr">
+                <div class="lc ms" style="background: #e8c400"></div>
+                Milestone
+            </div>
+            <div class="lr">
+                <svg width="38" height="14" style="flex-shrink: 0; display: block">
+                    <polygon points="19,1 37,9 31,9 31,13 7,13 7,9 1,9" fill="#c0392b" stroke="#e74c3c" stroke-width=".8" />
+                </svg>
+                AND Gate
+            </div>
+            <div class="lr">
+                <div style="width: 38px; border-top: 2px dashed #e8c400; flex-shrink: 0; margin-top: 1px"></div>
+                Cross-section dep.
+            </div>
+        </div>
+
+        <div id="scroll">
+            <div id="canvas"><svg id="svg-layer"></svg></div>
+        </div>
+
+        <script>
+            // ── CONSTANTS ────────────────────────────────────────────────────────
+            const CW = 130,
+                CH = 85,
+                NW = 116,
+                NH = 42,
+                GW = 32,
+                GH = 26,
+                SP = 22,
+                SG = 44,
+                SBOT = 1120;
+
+            // ── SECTIONS ─────────────────────────────────────────────────────────
+            const SDEFS = [
+                { id: "lv", lbl: "Low Voltage Wiring", cols: 3, rows: 10 },
+                { id: "tdp", lbl: "3D Prints", cols: 4, rows: 3 },
+                { id: "tsac", lbl: "TSAC Assembly", cols: 5, rows: 8 },
+                { id: "cc", lbl: "Charging Cart", cols: 3, rows: 4 },
+                { id: "bp", lbl: "Back Packaging", cols: 6, rows: 5 },
+                { id: "sw", lbl: "Software", cols: 4, rows: 3 },
+                { id: "hv", lbl: "HV Wiring", cols: 5, rows: 5 },
+            ];
+            let cx0 = 44;
+            const S = {};
+            SDEFS.forEach((s) => {
+                s.w = s.cols * CW + 2 * SP;
+                s.h = s.rows * CH + 2 * SP;
+                s.x = cx0;
+                s.y = SBOT - s.h;
+                S[s.id] = s;
+                cx0 += s.w + SG;
+            });
+            const CWIDTH = cx0 - SG + 44,
+                CHEIGHT = SBOT + 80;
+
+            function pos(sid, col, row) {
+                const s = S[sid];
+                return { cx: s.x + SP + col * CW + CW / 2, cy: s.y + SP + row * CH + CH / 2 };
+            }
+
+            // ── COLORS ───────────────────────────────────────────────────────────
+            const TC = { m: "#2d5fa6", a: "#6b4fa0", c: "#27ae60", ms: "#e8c400", g: null };
+
+            // ── NODES ────────────────────────────────────────────────────────────
+            // t: m=manufacturing, a=assembly, c=completed, ms=milestone, g=gate
+            const NODES = [
+                // ── LV WIRING (col 0-2, row 0-9) ──
+                { id: "lv_pcbs", sec: "lv", col: 0, row: 9, t: "m", lbl: "PCBs ordered" },
+                { id: "lv_part", sec: "lv", col: 2, row: 9, t: "m", lbl: "Parts order" },
+                { id: "lv_g1", sec: "lv", col: 1, row: 8, t: "g", lbl: "" },
+                { id: "lv_ship", sec: "lv", col: 1, row: 7, t: "m", lbl: "Ship to\nEurocircuits" },
+                { id: "lv_test", sec: "lv", col: 1, row: 6, t: "m", lbl: "Test PCBs" },
+                { id: "lv_inst", sec: "lv", col: 1, row: 5, t: "m", lbl: "Install PCBs" },
+                { id: "lv_cut", sec: "lv", col: 1, row: 4, t: "m", lbl: "Cut wires" },
+                { id: "lv_crmp", sec: "lv", col: 1, row: 3, t: "m", lbl: "Crimp pins" },
+                { id: "lv_conn", sec: "lv", col: 1, row: 2, t: "m", lbl: "Install connectors" },
+                { id: "lv_wdg", sec: "lv", col: 2, row: 2, t: "m", lbl: "Wiring diagram" },
+                { id: "lv_g2", sec: "lv", col: 1, row: 1, t: "g", lbl: "" },
+                { id: "lv_wire", sec: "lv", col: 1, row: 0, t: "a", lbl: "Wire up everything" },
+
+                // ── 3D PRINTS (no dependencies) ──
+                { id: "3d_stu", sec: "tdp", col: 0, row: 0, t: "m", lbl: "AL studs" },
+                { id: "3d_dsh", sec: "tdp", col: 1, row: 0, t: "m", lbl: "Dashboard housing" },
+                { id: "3d_enc", sec: "tdp", col: 2, row: 0, t: "m", lbl: "Circuit enclosure" },
+                { id: "3d_dlg", sec: "tdp", col: 3, row: 0, t: "m", lbl: "Datalogger mount" },
+                { id: "3d_imd", sec: "tdp", col: 0, row: 1, t: "c", lbl: "IMD circuit mount" },
+                { id: "3d_rlk", sec: "tdp", col: 1, row: 1, t: "c", lbl: "RadLok mounts" },
+                { id: "3d_air", sec: "tdp", col: 2, row: 1, t: "c", lbl: "AIRS stand" },
+                { id: "3d_bsk", sec: "tdp", col: 3, row: 1, t: "m", lbl: "Basket slide-ins" },
+                { id: "3d_pnc", sec: "tdp", col: 0, row: 2, t: "m", lbl: "Punch throughs" },
+                { id: "3d_dct", sec: "tdp", col: 1, row: 2, t: "m", lbl: "Ducts" },
+                { id: "3d_app", sec: "tdp", col: 2, row: 2, t: "m", lbl: "APPS" },
+                { id: "3d_est", sec: "tdp", col: 3, row: 2, t: "m", lbl: "E-stops" },
+
+                // ── TSAC ASSEMBLY (col 0-4, row 0-7) ──
+                { id: "ta_pcb", sec: "tsac", col: 0, row: 7, t: "m", lbl: "PCBs ordered" },
+                { id: "ta_prt", sec: "tsac", col: 1, row: 7, t: "m", lbl: "Parts order" },
+                { id: "ta_doc", sec: "tsac", col: 2, row: 7, t: "m", lbl: "Assembly doc" },
+                { id: "ta_col", sec: "tsac", col: 3, row: 7, t: "m", lbl: "Collect TSAC\nfrom welder" },
+                { id: "ta_bsk", sec: "tsac", col: 4, row: 7, t: "m", lbl: "3D print baskets" },
+                { id: "ta_cat", sec: "tsac", col: 2, row: 6, t: "ms", lbl: "Cathal approval" },
+                { id: "ta_g1", sec: "tsac", col: 2, row: 5, t: "g", lbl: "" },
+                { id: "ta_alv", sec: "tsac", col: 1, row: 4, t: "a", lbl: "Assemble\nLV section" },
+                { id: "ta_ace", sec: "tsac", col: 3, row: 4, t: "a", lbl: "Assemble cells" },
+                { id: "ta_g2", sec: "tsac", col: 2, row: 3, t: "g", lbl: "" },
+                { id: "ta_chv", sec: "tsac", col: 2, row: 2, t: "m", lbl: "Cut HV wiring" },
+                { id: "ta_cwi", sec: "tsac", col: 2, row: 1, t: "a", lbl: "Connect wires" },
+                { id: "ta_tst", sec: "tsac", col: 2, row: 0, t: "a", lbl: "Test" },
+
+                // ── CHARGING CART (col 0-2, row 0-3) ──
+                { id: "cc_chg", sec: "cc", col: 0, row: 3, t: "m", lbl: "Wire up charger" },
+                { id: "cc_tsc", sec: "cc", col: 2, row: 3, t: "m", lbl: "Wire TSAC\nconnector" },
+                { id: "cc_gte", sec: "cc", col: 1, row: 2, t: "g", lbl: "" },
+                { id: "cc_tst", sec: "cc", col: 1, row: 1, t: "a", lbl: "Test" },
+                { id: "cc_prt", sec: "cc", col: 1, row: 0, t: "c", lbl: "Make it pretty" },
+
+                // ── BACK PACKAGING (col 0-5, row 0-4) ──
+                { id: "bp_pan", sec: "bp", col: 2, row: 4, t: "m", lbl: "Panels cut" },
+                { id: "bp_mc", sec: "bp", col: 2, row: 3, t: "a", lbl: "Mount motor\ncontroller" },
+                { id: "bp_lv", sec: "bp", col: 0, row: 2, t: "a", lbl: "Mount LV\nbattery" },
+                { id: "bp_tsl", sec: "bp", col: 1, row: 2, t: "a", lbl: "Mount TSAL\nbattery" },
+                { id: "bp_hvd", sec: "bp", col: 2, row: 2, t: "a", lbl: "Mount HV\ndisconnect" },
+                { id: "bp_ms", sec: "bp", col: 3, row: 2, t: "a", lbl: "Mount master\nswitches" },
+                { id: "bp_pmp", sec: "bp", col: 4, row: 2, t: "a", lbl: "Mount pump\n+ cooling" },
+                { id: "bp_cb", sec: "bp", col: 5, row: 2, t: "a", lbl: "Mount\ncircuits box" },
+                { id: "bp_gte", sec: "bp", col: 2, row: 1, t: "g", lbl: "" },
+                { id: "bp_don", sec: "bp", col: 2, row: 0, t: "ms", lbl: "Back packaging\ncomplete" },
+
+                // ── SOFTWARE (col 0-3, row 0-2) ──
+                { id: "sw_cc", sec: "sw", col: 0, row: 2, t: "m", lbl: "CAN code" },
+                { id: "sw_ct", sec: "sw", col: 0, row: 1, t: "m", lbl: "CAN test" },
+                { id: "sw_dc", sec: "sw", col: 1, row: 2, t: "m", lbl: "Dash screen\nconfigs" },
+                { id: "sw_dco", sec: "sw", col: 1, row: 1, t: "m", lbl: "Dash code" },
+                { id: "sw_dt", sec: "sw", col: 1, row: 0, t: "m", lbl: "Dash test" },
+                { id: "sw_sc", sec: "sw", col: 2, row: 2, t: "m", lbl: "Sensors code" },
+                { id: "sw_st", sec: "sw", col: 2, row: 1, t: "m", lbl: "Sensors test" },
+                { id: "sw_lc", sec: "sw", col: 3, row: 2, t: "m", lbl: "Logging code" },
+                { id: "sw_lt", sec: "sw", col: 3, row: 1, t: "m", lbl: "Logging test" },
+
+                // ── HV WIRING (col 0-4, row 0-4) ──
+                { id: "hv_srt", sec: "hv", col: 2, row: 4, t: "ms", lbl: "Back pkg\ncomplete" },
+                { id: "hv_wdg", sec: "hv", col: 1, row: 3, t: "m", lbl: "HV wiring\ndiagram" },
+                { id: "hv_pln", sec: "hv", col: 3, row: 3, t: "m", lbl: "Plan HV\nlengths" },
+                { id: "hv_g1", sec: "hv", col: 2, row: 2, t: "g", lbl: "" },
+                { id: "hv_cut", sec: "hv", col: 2, row: 1, t: "m", lbl: "Cut HV wiring" },
+                { id: "hv_mtr", sec: "hv", col: 0, row: 0, t: "a", lbl: "Wire motor" },
+                { id: "hv_mc", sec: "hv", col: 1, row: 0, t: "a", lbl: "Wire motor\ncontroller" },
+                { id: "hv_hvd", sec: "hv", col: 2, row: 0, t: "a", lbl: "Wire HV\ndisconnect" },
+                { id: "hv_mst", sec: "hv", col: 3, row: 0, t: "a", lbl: "Wire master\nswitches" },
+                { id: "hv_tsc", sec: "hv", col: 4, row: 0, t: "a", lbl: "Wire TSAC" },
+            ];
+
+            // ── EDGES [from, to, ?type] ───────────────────────────────────────────
+            // type: undefined=normal, 'cross'=cross-section dashed
+            const EDGES = [
+                // LV Wiring
+                ["lv_pcbs", "lv_g1"],
+                ["lv_part", "lv_g1"],
+                ["lv_g1", "lv_ship"],
+                ["lv_ship", "lv_test"],
+                ["lv_test", "lv_inst"],
+                ["lv_inst", "lv_cut"],
+                ["lv_cut", "lv_crmp"],
+                ["lv_crmp", "lv_conn"],
+                ["lv_conn", "lv_g2"],
+                ["lv_wdg", "lv_g2"],
+                ["lv_g2", "lv_wire"],
+                // TSAC
+                ["ta_doc", "ta_cat"],
+                ["ta_cat", "ta_g1"],
+                ["ta_pcb", "ta_g1"],
+                ["ta_prt", "ta_g1"],
+                ["ta_col", "ta_g1"],
+                ["ta_bsk", "ta_g1"],
+                ["ta_g1", "ta_alv"],
+                ["ta_g1", "ta_ace"],
+                ["ta_alv", "ta_g2"],
+                ["ta_ace", "ta_g2"],
+                ["ta_g2", "ta_chv"],
+                ["ta_chv", "ta_cwi"],
+                ["ta_cwi", "ta_tst"],
+                // CC
+                ["cc_chg", "cc_gte"],
+                ["cc_tsc", "cc_gte"],
+                ["cc_gte", "cc_tst"],
+                ["cc_tst", "cc_prt"],
+                // BP - fan-out and fan-in handled separately as BAR pattern
+                ["bp_pan", "bp_mc"],
+                ["bp_gte", "bp_don"],
+                // SW
+                ["sw_cc", "sw_ct"],
+                ["sw_dc", "sw_dco"],
+                ["sw_dco", "sw_dt"],
+                ["sw_sc", "sw_st"],
+                ["sw_lc", "sw_lt"],
+                // HV
+                ["hv_srt", "hv_wdg"],
+                ["hv_srt", "hv_pln"],
+                ["hv_wdg", "hv_g1"],
+                ["hv_pln", "hv_g1"],
+                ["hv_g1", "hv_cut"],
+                ["hv_cut", "hv_mtr"],
+                ["hv_cut", "hv_mc"],
+                ["hv_cut", "hv_hvd"],
+                ["hv_cut", "hv_mst"],
+                ["hv_cut", "hv_tsc"],
+            ];
+
+            // ── POSITION MAP ─────────────────────────────────────────────────────
+            const PM = {};
+            NODES.forEach((n) => {
+                PM[n.id] = pos(n.sec, n.col, n.row);
+            });
+
+            // ── DOM SETUP ─────────────────────────────────────────────────────────
+            const canvas = document.getElementById("canvas");
+            const svg = document.getElementById("svg-layer");
+            canvas.style.cssText = `width:${CWIDTH}px;height:${CHEIGHT}px;`;
+            svg.setAttribute("width", CWIDTH);
+            svg.setAttribute("height", CHEIGHT);
+            svg.setAttribute("viewBox", `0 0 ${CWIDTH} ${CHEIGHT}`);
+
+            // SVG defs: arrowhead markers
+            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            defs.innerHTML = `
+  <marker id="arr" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+    <polygon points="0 0,7 2.5,0 5" fill="rgba(180,210,255,.65)"/>
+  </marker>
+  <marker id="arx" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+    <polygon points="0 0,7 2.5,0 5" fill="#e8c400"/>
+  </marker>`;
+            svg.appendChild(defs);
+
+            // ── SECTION BOXES ─────────────────────────────────────────────────────
+            SDEFS.forEach((s) => {
+                const d = document.createElement("div");
+                d.className = "sec-box";
+                Object.assign(d.style, { left: s.x + "px", top: s.y + "px", width: s.w + "px", height: s.h + "px" });
+                const l = document.createElement("div");
+                l.className = "sec-label";
+                l.textContent = s.lbl;
+                d.appendChild(l);
+                canvas.appendChild(d);
+            });
+
+            // ── RENDER NODES ─────────────────────────────────────────────────────
+            NODES.forEach((n) => {
+                if (n.t === "g") return;
+                const p = PM[n.id];
+                const el = document.createElement("div");
+                el.className = "nd" + (n.t === "ms" ? " ms" : "");
+                Object.assign(el.style, {
+                    width: NW + "px",
+                    height: NH + "px",
+                    left: p.cx - NW / 2 + "px",
+                    top: p.cy - NH / 2 + "px",
+                    background: TC[n.t],
+                    color: n.t === "ms" ? "#111" : "#fff",
+                });
+                el.innerHTML = n.lbl.replace(/\n/g, "<br>");
+                canvas.appendChild(el);
+            });
+
+            // ── RENDER GATES (SVG upward-arrow shape) ────────────────────────────
+            function gatePts(cx, cy) {
+                const w = GW,
+                    h = GH;
+                return [
+                    [cx, cy - h / 2],
+                    [cx + w / 2, cy + h * 0.15],
+                    [cx + w * 0.32, cy + h * 0.15],
+                    [cx + w * 0.32, cy + h / 2],
+                    [cx - w * 0.32, cy + h / 2],
+                    [cx - w * 0.32, cy + h * 0.15],
+                    [cx - w / 2, cy + h * 0.15],
+                ]
+                    .map((p) => p.join(","))
+                    .join(" ");
+            }
+            NODES.filter((n) => n.t === "g").forEach((n) => {
+                const p = PM[n.id];
+                const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                poly.setAttribute("points", gatePts(p.cx, p.cy));
+                poly.setAttribute("fill", "#a93226");
+                poly.setAttribute("stroke", "#e74c3c");
+                poly.setAttribute("stroke-width", "1");
+                svg.appendChild(poly);
+            });
+
+            // ── ARROW HELPERS ────────────────────────────────────────────────────
+            function nBot(id) {
+                const n = NODES.find((x) => x.id === id),
+                    p = PM[id];
+                return { x: p.cx, y: p.cy + (n.t === "g" ? GH / 2 : NH / 2) };
+            }
+            function nTop(id) {
+                const n = NODES.find((x) => x.id === id),
+                    p = PM[id];
+                return { x: p.cx, y: p.cy - (n.t === "g" ? GH / 2 : NH / 2) };
+            }
+
+            function svgPath(d, cross = false, noMarker = false) {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", d);
+                path.setAttribute("fill", "none");
+                if (cross) {
+                    path.setAttribute("stroke", "#e8c400");
+                    path.setAttribute("stroke-width", "2");
+                    path.setAttribute("stroke-dasharray", "5,4");
+                    if (!noMarker) path.setAttribute("marker-end", "url(#arx)");
+                    path.setAttribute("opacity", ".85");
+                } else {
+                    path.setAttribute("stroke", "rgba(180,210,255,.48)");
+                    path.setAttribute("stroke-width", "1.5");
+                    if (!noMarker) path.setAttribute("marker-end", "url(#arr)");
+                }
+                svg.appendChild(path);
+            }
+
+            function svgLine(x1, y1, x2, y2, cross = false) {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", x1);
+                line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2);
+                line.setAttribute("y2", y2);
+                line.setAttribute("stroke", cross ? "rgba(232,196,0,.5)" : "rgba(180,210,255,.38)");
+                line.setAttribute("stroke-width", "1.5");
+                svg.appendChild(line);
+            }
+
+            // Standard elbow routing: source bottom → midY → target top
+            function mkEdge(fId, tId) {
+                const s = nBot(fId),
+                    e = nTop(tId);
+                let d;
+                if (Math.abs(s.x - e.x) < 2) {
+                    d = `M${s.x} ${s.y}L${e.x} ${e.y}`;
+                } else {
+                    const my = (s.y + e.y) / 2;
+                    d = `M${s.x} ${s.y}L${s.x} ${my}L${e.x} ${my}L${e.x} ${e.y}`;
+                }
+                svgPath(d);
+            }
+
+            // ── STANDARD EDGES ───────────────────────────────────────────────────
+            EDGES.forEach(([a, b, t]) => {
+                mkEdge(a, b);
+            });
+
+            // ── BP BAR FAN-OUT: bp_mc → 6 mounts ─────────────────────────────────
+            {
+                const src = nBot("bp_mc");
+                const targets = ["bp_lv", "bp_tsl", "bp_hvd", "bp_ms", "bp_pmp", "bp_cb"];
+                const tops = targets.map((id) => nTop(id));
+                const minX = Math.min(...tops.map((t) => t.x));
+                const maxX = Math.max(...tops.map((t) => t.x));
+                // midY between bp_mc bottom and mounts top
+                const midY = (src.y + tops[0].y) / 2;
+                // Stem from bp_mc down to midY
+                svgLine(src.x, src.y, src.x, midY);
+                // Horizontal bar
+                svgLine(minX, midY, maxX, midY);
+                // Individual drops from bar to each mount (with arrowhead)
+                tops.forEach((t) => {
+                    svgPath(`M${t.x} ${midY}L${t.x} ${t.y}`);
+                });
+            }
+
+            // ── BP BAR FAN-IN: 6 mounts → bp_gate ────────────────────────────────
+            {
+                const sources = ["bp_lv", "bp_tsl", "bp_hvd", "bp_ms", "bp_pmp", "bp_cb"];
+                const bots = sources.map((id) => nBot(id));
+                const tgt = nTop("bp_gte");
+                const minX = Math.min(...bots.map((b) => b.x));
+                const maxX = Math.max(...bots.map((b) => b.x));
+                const midY = (bots[0].y + tgt.y) / 2;
+                // Individual stubs from each mount down to bar
+                bots.forEach((b) => {
+                    svgLine(b.x, b.y, b.x, midY);
+                });
+                // Horizontal bar
+                svgLine(minX, midY, maxX, midY);
+                // Single arrow from bar center to gate
+                svgPath(`M${tgt.x} ${midY}L${tgt.x} ${tgt.y}`);
+            }
+
+            // ── CROSS-SECTION: bp_don → hv_srt ───────────────────────────────────
+            {
+                const s = nBot("bp_don");
+                const e = nTop("hv_srt");
+                // Route: go down to just above SW section top, then right, then down
+                const routeY = S.sw.y - 10;
+                const d = `M${s.x} ${s.y}L${s.x} ${routeY}L${e.x} ${routeY}L${e.x} ${e.y}`;
+                svgPath(d, true);
+                // Label on horizontal segment
+                const mid = (s.x + e.x) / 2;
+                const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                txt.setAttribute("x", mid);
+                txt.setAttribute("y", routeY - 5);
+                txt.setAttribute("text-anchor", "middle");
+                txt.setAttribute("font-size", "9");
+                txt.setAttribute("font-family", "Segoe UI,system-ui,sans-serif");
+                txt.setAttribute("fill", "rgba(232,196,0,.65)");
+                txt.textContent = "Back Packaging complete → HV Wiring starts";
+                svg.appendChild(txt);
+            }
+
+            // ── SCROLL POSITION ───────────────────────────────────────────────────
+            document.getElementById("scroll").scrollTop = 60;
+        </script>
+    </body>
+</html>

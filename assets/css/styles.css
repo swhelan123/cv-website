@@ -425,6 +425,8 @@ section { position: relative; z-index: 2; }
 .projects-grid.in .project-card:nth-child(7) { transition-delay: 480ms; }
 .projects-grid.in .project-card:nth-child(8) { transition-delay: 560ms; }
 .projects-grid.in .project-card:nth-child(9) { transition-delay: 640ms; }
+.projects-grid.in .project-card:nth-child(10) { transition-delay: 720ms; }
+.projects-grid.in .project-card:nth-child(11) { transition-delay: 800ms; }
 .project-card:hover { background: var(--paper-2); }
 
 .project-img-wrap {

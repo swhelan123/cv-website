@@ -113,7 +113,7 @@
     </div>
     <div class="about-grid reveal">
       <p>I'm Electrical Captain at UCD Formula Student, leading a division of 19 engineers, and still the team's lead programmer: the battery management system, the vehicle control unit, and the CAN network that ties them together. I was the first Computer Science student on the team. The intersection of software and physical systems is where I'm most at home.</p>
-      <p>Across the 2026 season I moved our VCU onto the Teensy 4.1 platform, wrote the firmware for our custom STM32 battery management system with a protocol-level simulator so it could be tested before hardware arrived, and built the internal platform the team now runs on. We took E135 to FSUK 2026 at Silverstone and finished 29th overall as the top Republic of Ireland team, clearing five scrutineering stickers — four of them a first for UCD.</p>
+      <p>Across the 2026 season I moved our VCU onto the Teensy 4.1 platform, brought our custom STM32 battery management system up on real hardware, and built the internal platform the team now runs on. We took E135 to FSUK 2026 at Silverstone and finished 29th overall as the top Republic of Ireland team, clearing five scrutineering stickers — four of them a first for UCD.</p>
       <p>Alongside that I'm a final-year Computer Science (Data Science &amp; AI) student at UCD, holding a 3.97&thinsp;/&thinsp;4.20 GPA, First Class Honours. I spent the summer of 2025 as a Software Engineer Intern at Twilio in Dublin, working on high-throughput APNs messaging infrastructure in Java.</p>
     </div>
   </div>
@@ -138,10 +138,10 @@
         <ul class="exp-bullets">
           <li><strong>Electrical Captain</strong> (Jan 2026 – Present, formerly Powertrain Captain): lead a division of 19 engineers, renamed from Powertrain to Electrical for the 2026/27 season.</li>
           <li>Led the division through FSUK 2026 at Silverstone: the team finished 29th overall and was the top Republic of Ireland entry, taking 5 scrutineering stickers, 4 of them for the first time in the team's history.</li>
-          <li>Wrote the firmware for our custom battery management system in C on an STM32F303: an LTC6812 isoSPI driver for a 75S7P accumulator, cell balancing, open-wire detection, fault handling, CAN, and a bootloader for in-field firmware updates.</li>
-          <li>Built the BMS desktop tool in Python and PyQt6 for board bring-up, live cell monitoring, configuration and flashing, plus a protocol-level simulator with 12 fault modes. Backed by ~330 pytest and 181 C unit tests against mocked peripherals.</li>
+          <li>Brought up our custom battery management system (STM32F303, LTC6812 over isoSPI, 75S7P accumulator) on real hardware, building on a teammate's original firmware: fixed the bootloader so the board could boot and update over USB, fixed the isoSPI driver until cell readings matched a multimeter to within 5&nbsp;mV, and made the fault and output logic safe for the car.</li>
+          <li>Added charger control over CAN (Elcon CC/CV, switching the bus to the charger's protocol when one is plugged in), a datasheet-based open-wire check, and support for 60- and 75-cell packs from a single firmware image.</li>
           <li><strong>Powertrain Vice Captain</strong> (Sep 2025 – Jan 2026): supported the captain on division decisions and project management, tracking progress and deadlines across the powertrain build.</li>
-          <li><strong>Software Engineer, VCU</strong> (Oct 2024 – Sep 2025): wrote the Vehicle Control Unit firmware in C++ on a Teensy 4.1, controlling a Bamocar D3 and Emrax 208 motor over CAN with torque mapping, regenerative braking and battery current limit handling.</li>
+          <li><strong>Software Engineer, VCU</strong> (Oct 2024 – Sep 2025): wrote the Vehicle Control Unit firmware in C++ on an Arduino Due, controlling a Bamocar D3 and Emrax 208 motor over CAN with torque mapping, regenerative braking and battery current limit handling.</li>
           <li>Implemented the FSUK safety logic: APPS plausibility checks, pedal/brake interlocks, IMD and BSPD fault monitoring, and a deceleration-triggered brake light; integrated the BMS over CAN and a Nextion dashboard for live telemetry.</li>
         </ul>
         <div class="exp-tags">
@@ -213,10 +213,10 @@
         <div class="project-body">
           <div class="project-top">
             <span class="project-num">02</span>
-            <div class="project-tags"><span>C</span><span>STM32</span><span>isoSPI</span><span>PyQt6</span><span>pytest</span></div>
+            <div class="project-tags"><span>C</span><span>STM32</span><span>isoSPI</span><span>CAN Bus</span></div>
           </div>
           <h3 class="project-name">STM32 Battery Management System</h3>
-          <p class="project-desc">Firmware for UCDFS's custom BMS on an STM32F303: LTC6812 isoSPI driver for a 75S7P accumulator, balancing, open-wire detection, faults, CAN and a bootloader. PyQt6 desktop tool plus a simulator with 12 fault modes, backed by ~330 pytest and 181 C unit tests.</p>
+          <p class="project-desc">Hardware bring-up of UCDFS's custom BMS on an STM32F303, building on a teammate's original firmware: bootloader and isoSPI fixes, Elcon charger control over CAN, open-wire detection, and 60/75-cell pack support from one image.</p>
           <span class="project-cta">View on GitHub</span>
         </div>
       </a>
